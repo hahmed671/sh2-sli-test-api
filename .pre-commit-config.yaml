@@ -1,0 +1,38 @@
+# pre-commit hooks to check code for minimum standards before allowing commits
+# uses the pre-commit lib, which can cause problems with code defender.
+# if you encounter the dreaded core.hookspath error, you need the below to disable it, reinstall defender
+# ##############
+# git config --system --unset-all core.hookspath
+# pre-commit install
+# pre-commit --version#
+# ##############
+# when prettier installs, you may see the "you might need to udpate" message
+# pre-commit autoupdate
+# ##############
+# run this manually:
+# pre-commit run --all-files
+# ##############
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: detect-aws-credentials
+        args:
+          - --allow-missing-credentials
+      - id: detect-private-key
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.16.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: "v2.42.1"
+    hooks:
+      - id: commitizen
+      - id: commitizen-branch
+        stages: [push]

@@ -1,26 +1,30 @@
 from constructs import Construct
 from aws_cdk import (
-    Duration,
     Stack,
-    aws_iam as iam,
-    aws_sqs as sqs,
-    aws_sns as sns,
-    aws_sns_subscriptions as subs,
+    aws_lambda as _lambda,
+    aws_apigateway as apigw,
 )
-
+from .request_counter_stack import RequestCounter
+from .observability_stack import ObservabilityStack
 
 class SliTestApiStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
-        super().__init__(scope, construct_id, **kwargs)
-
-        queue = sqs.Queue(
-            self, "SliTestApiQueue",
-            visibility_timeout=Duration.seconds(300),
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+        sli_lambda = _lambda.Function(
+            self,'sli-test-lambda-handler',
+            runtime = _lambda.Runtime.PYTHON_3_7,
+            code = _lambda.Code.from_asset('lambda'),
+            handler = 'lambda_handler.handler',
         )
 
-        topic = sns.Topic(
-            self, "SliTestApiTopic"
-        )
+        request_counter = RequestCounter(self, 'RequestCounter',downstream = sli_lambda)
 
-        topic.add_subscription(subs.SqsSubscription(queue))
+        sli_lambda.grant_invoke(request_counter.handler)
+
+        endpoint = apigw.LambdaRestApi(
+            self, 'Endpoint',
+            handler = request_counter._handler,
+        )
+        observability = ObservabilityStack(self, id='SLI-Test-API-Dashboard',api=endpoint.rest_api_name)
+
